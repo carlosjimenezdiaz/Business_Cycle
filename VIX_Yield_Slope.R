@@ -1,8 +1,8 @@
 # Libraries that we need
-library(tidyquant)
-library(tidyverse)
-library(tibbletime)
-library(viridis)
+if (!require("tidyquant")) install.packages("tidyquant"); library(tidyquant)
+if (!require("tidyverse")) install.packages("tidyverse"); library(tidyverse)
+if (!require("tibbletime")) install.packages("tibbletime"); library(tibbletime)
+if (!require("viridis")) install.packages("viridis"); library(viridis)
 
 # Variables
 n_periods = 4  # Num of years to calculate the SMA
@@ -29,10 +29,10 @@ VIX_DB <- tq_get("^VIX",
                  complete.cases = TRUE) %>%
   tibbletime::as_tbl_time(date) %>%
   tibbletime::as_period("monthly", side = "start") %>%
+  na.omit() %>%
   dplyr::select(date, adjusted) %>%
   dplyr::mutate(MA_VIX = SMA(adjusted, n = 12*n_periods)/100) %>%
   dplyr::select(-adjusted)
-
 
 # Joining both DB
 Global_DB <- Economic_Data %>% 
@@ -42,7 +42,6 @@ Global_DB <- Economic_Data %>%
   dplyr::mutate(Col_Legend = floor_date(date, years(n_periods)) %>% lubridate::year(),
                 Col_Legend = case_when(lubridate::year(date) == lubridate::year(Sys.Date()) ~ lubridate::year(Sys.Date()),
                                        TRUE ~ Col_Legend))
-
 
 # Plotting the results
 n_years = 15 # Last X years to display in the chart
@@ -76,4 +75,9 @@ Global_DB %>%
   scale_y_continuous(labels = scales::percent) +
   scale_x_continuous(labels = scales::percent) +
   theme(axis.line    = element_line(colour = "black"),
-        legend.title = element_blank())
+        legend.title = element_blank(),
+        axis.text.x=element_blank(), 
+        axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(), 
+        axis.ticks.y=element_blank())
+
