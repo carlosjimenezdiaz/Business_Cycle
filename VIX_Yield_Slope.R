@@ -3,6 +3,7 @@ if (!require("tidyquant")) install.packages("tidyquant"); library(tidyquant)
 if (!require("tidyverse")) install.packages("tidyverse"); library(tidyverse)
 if (!require("tibbletime")) install.packages("tibbletime"); library(tibbletime)
 if (!require("viridis")) install.packages("viridis"); library(viridis)
+if (!require("highcharter")) install.packages("highcharter"); library(highcharter)
 
 # Variables
 n_periods = 4  # Num of years to calculate the SMA
@@ -30,9 +31,11 @@ VIX_DB <- tq_get("^VIX",
   tibbletime::as_tbl_time(date) %>%
   tibbletime::as_period("monthly", side = "start") %>%
   na.omit() %>%
-  dplyr::select(date, adjusted) %>%
-  dplyr::mutate(MA_VIX = SMA(adjusted, n = 12*n_periods)/100) %>%
-  dplyr::select(-adjusted)
+  dplyr::mutate(new_date = str_glue("{substr(date, 1,8)}01") %>% as.Date(),
+                MA_VIX   = SMA(adjusted, n = 12*n_periods)/100) %>%
+  dplyr::select(new_date, MA_VIX) %>%
+  dplyr::rename("date" = "new_date")
+
 
 # Joining both DB
 Global_DB <- Economic_Data %>% 
@@ -41,10 +44,11 @@ Global_DB <- Economic_Data %>%
   as_tibble() %>%
   dplyr::mutate(Col_Legend = floor_date(date, years(n_periods)) %>% lubridate::year(),
                 Col_Legend = case_when(lubridate::year(date) == lubridate::year(Sys.Date()) ~ lubridate::year(Sys.Date()),
-                                       TRUE ~ Col_Legend))
+                                       TRUE ~ Col_Legend)) %>%
+  dplyr::mutate(Col_Legend = str_glue("Starting in {Col_Legend} - plus {n_periods} years"))
 
 # Plotting the results
-n_years = 15 # Last X years to display in the chart
+n_years = 25 # Last X years to display in the chart
 
 Mid_Point_Vix   = (max(Global_DB$MA_VIX) + min(Global_DB$MA_VIX))/2
 Mid_Point_Slope = (max(Global_DB$MA_Slope) + min(Global_DB$MA_Slope))/2
